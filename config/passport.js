@@ -16,10 +16,10 @@ passport.use(
         if (!user) {
           // Create a new user if not found
           user = await User.create({
-            googleId: profile.id,
-            name: profile.displayName,
-            email: profile.emails[0].value,
-            avatar: profile.photos[0].value,
+          googleId: profile.id,
+          name: profile.displayName,
+          email: profile.emails[0].value,
+          avatar: profile.photos[0].value,
           });
         }
         done(null, user);

@@ -11,6 +11,7 @@ require('https').globalAgent.options.rejectUnauthorized = false;
 const passport = require('./config/passport');
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/newProduct');
+const getProdByCat = require('./routes/getProduct');
 
 app.use(express.json());
 app.use(
@@ -27,6 +28,7 @@ mongoose.connect(process.env.MONGO_URI).then((e) => console.log("Mongodb connect
 
 app.use('/auth', authRoutes);
 app.use('/product', productRoutes);
+app.use('/products', getProdByCat);
 
 app.get('/', (req, res) => {
   res.send('running')

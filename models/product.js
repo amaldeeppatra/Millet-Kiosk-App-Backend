@@ -1,4 +1,5 @@
 const { Schema, model } = require("mongoose");
+const Decimal128 = require('mongodb').Decimal128;
 
 const productSchema = new Schema({
   prodId: {
@@ -28,14 +29,14 @@ const productSchema = new Schema({
     type: Decimal128,
     required: true,
   },
-  description: {
-    type: String,
-    default: "",
-  },
   stock: {
     type: Number,
     required: true,
   },
+  rating: {
+    type: Decimal128,
+    required: true,
+  }
 });
 
 const Product = model("product", productSchema);

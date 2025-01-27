@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require("express");
 const session = require('express-session');
+const bodyParser = require('body-parser'); 
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT;
 
@@ -13,6 +15,7 @@ const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/newProduct');
 const getProdByCat = require('./routes/getProduct');
 
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   session({
@@ -23,6 +26,8 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use(express.static(path.join(__dirname, 'views')));
 
 mongoose.connect(process.env.MONGO_URI).then((e) => console.log("Mongodb connected"));
 

@@ -27,7 +27,10 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.set('view engine', 'ejs');
+
 app.use(express.static(path.join(__dirname, 'views')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 mongoose.connect(process.env.MONGO_URI).then((e) => console.log("Mongodb connected"));
 

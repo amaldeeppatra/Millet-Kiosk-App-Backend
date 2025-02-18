@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require("express");
 const session = require('express-session');
+const cors = require("cors");
 const bodyParser = require('body-parser'); 
 const path = require('path');
 const app = express();
@@ -14,6 +15,9 @@ const passport = require('./config/passport');
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/newProduct');
 const getProdByCat = require('./routes/getProduct');
+const searchRoutes = require('./routes/search');
+
+app.use(cors({ origin: ['http://10.2.99.211:5173', 'http://localhost:5173', '0.0.0.0/0', 'http://10.2.105.237:5173'], credentials: true }));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
@@ -37,6 +41,7 @@ mongoose.connect(process.env.MONGO_URI).then((e) => console.log("Mongodb connect
 app.use('/auth', authRoutes);
 app.use('/product', productRoutes);
 app.use('/products', getProdByCat);
+app.use('/search', searchRoutes);
 
 app.get('/', (req, res) => {
   res.send('running')

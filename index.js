@@ -17,7 +17,8 @@ const productRoutes = require('./routes/newProduct');
 const getProdByCat = require('./routes/getProduct');
 const searchRoutes = require('./routes/search');
 
-app.use(cors({ origin: ['http://10.2.99.211:5173', 'http://localhost:5173', 'https://millet-kiosk-app.vercel.app', 'http://10.2.105.237:5173'], credentials: true }));
+// app.use(cors({ origin: ['http://10.2.99.211:5173', 'http://localhost:5173', 'https://millet-kiosk-app.vercel.app', 'http://10.2.105.237:5173'], credentials: true }));
+app.use(cors({ credentials: true }));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());

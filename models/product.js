@@ -36,6 +36,14 @@ const productSchema = new Schema({
   rating: {
     type: Decimal128,
     required: true,
+  },
+  prodIngredients: {
+    type: String,
+    default: "Not Available"
+  },
+  prodNutrients: {
+    type: String,
+    default: "Not Available"
   }
 });
 

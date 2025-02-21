@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require("express");
 const session = require('express-session');
 const cors = require("cors");
-const bodyParser = require('body-parser'); 
+const bodyParser = require('body-parser');
+const cookieParser = require("cookie-parser");
 const path = require('path');
 const app = express();
 const PORT = process.env.PORT;
@@ -31,6 +32,7 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(cookieParser());
 
 app.set('view engine', 'ejs');
 

@@ -9,6 +9,11 @@ const userSchema = new Schema(
       index: true,
       sparse: true,
     },
+    googleId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     name: {
       type: String,
       required: true,
@@ -17,6 +22,9 @@ const userSchema = new Schema(
       type: String,
       required: true,
       unique: true,
+    },
+    phone: {
+      type: String,
     },
     avatar: {
       type: String,

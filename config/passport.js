@@ -11,19 +11,21 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // Check if user exists
+        // Look for an existing user by googleId.
         let user = await User.findOne({ googleId: profile.id });
         if (!user) {
-          // Create a new user if not found
+          // Create a new user and set both userId and googleId to profile.id.
           user = await User.create({
-          googleId: profile.id,
-          name: profile.displayName,
-          email: profile.emails[0].value,
-          avatar: profile.photos[0].value,
+            userId: profile.id,   // Set userId as googleId
+            googleId: profile.id,
+            name: profile.displayName,
+            email: profile.emails[0].value,
+            avatar: profile.photos[0].value,
           });
         }
         done(null, user);
       } catch (error) {
+        console.log({ error });
         done(error, null);
       }
     }

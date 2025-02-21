@@ -1,9 +1,9 @@
 const Product = require("../models/product");
 
 async function createProduct(req, res) {
-    const { prodId, prodName, prodDesc, category, price, stock, rating } = req.body;
+    const { prodId, prodName, prodDesc, category, price, stock, rating, prodImg } = req.body;
     try {
-        const prodImg = req.file ? req.file.path : null;
+        // const prodImg = req.file ? req.file.path : null;
         const newProduct = new Product({
             prodId,
             prodName,

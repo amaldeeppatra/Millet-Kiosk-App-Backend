@@ -17,8 +17,8 @@ router.get(
     const token = createTokenForUser(req.user);
     // Set the JWT as an HttpOnly cookie so it's not accessible via JavaScript.
     res.cookie('auth_token', token, {
-      httpOnly: true, // Prevents JS access (helps mitigate XSS)
-      secure: process.env.NODE_ENV, // Only send cookie over HTTPS in production
+      // httpOnly: true, // Prevents JS access (helps mitigate XSS)
+      // secure: process.env.NODE_ENV, // Only send cookie over HTTPS in production
       sameSite: 'strict',
       maxAge: 7 * 60 * 60 * 1000, // 7 hours in milliseconds
     });

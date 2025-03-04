@@ -8,7 +8,7 @@ function createTokenForUser(user){
         email: user.email,
     };
     const options = {
-        expiresIn: '7h' // Token expires in 7 hours
+        expiresIn: '1h' // Token expires in 7 hours
     };
     const token = JWT.sign(payload, secret, options);
 

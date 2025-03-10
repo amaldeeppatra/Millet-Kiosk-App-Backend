@@ -35,10 +35,9 @@ router.get(
     // }
     const token = createTokenForUser(req.user);
     res.cookie("token", token, {
-      httpOnly: true,
+      // httpOnly: true,
       secure: true,
       sameSite: 'none',
-      domain: 'millet-kiosk-app.vercel.app',
       maxAge: 1 * 60 * 60 * 1000,
     });
     res.redirect(`${process.env.VITE_APP_URL}/homepage`);

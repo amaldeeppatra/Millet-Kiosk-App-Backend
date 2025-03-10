@@ -34,7 +34,7 @@ router.get(
     // }
     const token = createTokenForUser(req.user);
     res.cookie("token", token, {
-      httpOnly: true,
+      // httpOnly: true,
       secure: true,
       maxAge: 1 * 60 * 60 * 1000,
     });

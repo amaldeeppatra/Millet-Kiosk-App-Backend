@@ -30,13 +30,13 @@ router.get(
     //   res.redirect(`${process.env.VITE_APP_URL}/login-phone`);
     // } else {
     //   // Existing user: redirect to the homepage.
-    //   res.redirect(`${process.env.VITE_APP_URL}/homepage`);
+    //   res.redirect(`${process.env.VITE_AoPP_URL}/homepage`);
     // }
     const token = createTokenForUser(req.user);
     res.cookie("token", token, {
       // httpOnly: true,
       secure: true,
-      sameSite: "none",
+      sameSite: 'None',
       maxAge: 1 * 60 * 60 * 1000,
     });
     res.redirect(`${process.env.VITE_APP_URL}/homepage`);

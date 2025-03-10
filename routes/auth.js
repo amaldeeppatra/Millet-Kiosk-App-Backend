@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const passport = require('passport');
+const jwt = require('jsonwebtoken');
 const { loginSuccess, logout } = require('../controllers/authController');
 const { createTokenForUser } = require('../services/authentication');
 
@@ -34,7 +35,7 @@ router.get(
     // }
     const token = createTokenForUser(req.user);
     res.cookie("token", token, {
-      // httpOnly: true,
+      httpOnly: true,
       secure: true,
       sameSite: 'none',
       maxAge: 1 * 60 * 60 * 1000,
@@ -42,6 +43,25 @@ router.get(
     res.redirect(`${process.env.VITE_APP_URL}/homepage`);
   }
 );
+
+router.get('/verify', (req, res) => {
+  const token = req.cookies.token;
+  if(!token) {
+    return res.status(401).json({ success: false, message: 'User not authenticated' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if(err) {
+      return res.status(401).json({ success: false, message: 'Token is invalid or expired' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User successfully authenticated',
+      user: user,
+    });
+  });
+});
 
 // Logout route
 router.get('/logout', logout);

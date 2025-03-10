@@ -36,6 +36,7 @@ router.get(
     res.cookie("token", token, {
       // httpOnly: true,
       secure: true,
+      SameSite: true,
       maxAge: 1 * 60 * 60 * 1000,
     });
     res.redirect(`${process.env.VITE_APP_URL}/homepage`);

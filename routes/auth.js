@@ -32,6 +32,11 @@ router.get(
     //   // Existing user: redirect to the homepage.
     //   res.redirect(`${process.env.VITE_APP_URL}/homepage`);
     // }
+    const token = createTokenForUser(req.user);
+    res.cookie("token", token, {
+      httpOnly: true,
+      maxAge: 1 * 60 * 60 * 1000,
+    });
     res.redirect(`${process.env.VITE_APP_URL}/homepage`);
   }
 );

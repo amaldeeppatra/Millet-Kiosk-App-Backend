@@ -35,7 +35,7 @@ router.get(
     const token = createTokenForUser(req.user);
     res.cookie("token", token, {
       // httpOnly: true,
-      // secure: true,
+      secure: true,
       maxAge: 1 * 60 * 60 * 1000,
     });
     res.redirect(`${process.env.VITE_APP_URL}/homepage`);

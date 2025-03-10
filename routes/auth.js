@@ -38,6 +38,7 @@ router.get(
       httpOnly: true,
       secure: true,
       sameSite: 'none',
+      domain: 'millet-kiosk-app.vercel.app',
       maxAge: 1 * 60 * 60 * 1000,
     });
     res.redirect(`${process.env.VITE_APP_URL}/homepage`);

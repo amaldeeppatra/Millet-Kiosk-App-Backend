@@ -6,7 +6,7 @@ exports.loginSuccess = (req, res) => {
         user: req.user,
       });
     } else {
-      res.status(401).json({ success: false, message: 'Not authenticated' });
+      res.status(401).json({ success: false, message: 'User not authenticated' });
     }
   };
   

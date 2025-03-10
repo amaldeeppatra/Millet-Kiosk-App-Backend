@@ -5,7 +5,8 @@ const secret = process.env.jwtsecretkey;
 function createTokenForUser(user){
     const payload = {
         _id: user._id,
-        email: user.email,
+        // email: user.email,
+        user: user,
     };
     const options = {
         expiresIn: '1h' // Token expires in 7 hours

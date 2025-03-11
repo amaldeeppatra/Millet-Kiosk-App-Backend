@@ -40,7 +40,7 @@ router.get(
       sameSite: 'none',
       maxAge: 1 * 60 * 60 * 1000,
     });
-    res.redirect(`${process.env.VITE_APP_URL}/homepage`);
+    res.redirect(`${process.env.VITE_APP_URL}/redirecting`);
     // res.redirect(`${process.env.VITE_APP_URL}/homepage?token=${token}`);
   }
 );

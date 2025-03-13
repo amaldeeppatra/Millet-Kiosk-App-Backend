@@ -1,6 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const Razorpay = require('razorpay');
+const crypto = require('crypto');
+const { validateOrder } = require('../controllers/validateOrder');
+const { updateInventory } = require('../controllers/updateInventory');
 
 const router = express.Router();
 
@@ -25,5 +28,9 @@ router.post('/', async (req, res) => {
         return res.status(500).send(err);
     }
 })
+
+router.post('/validate', validateOrder);
+
+router.post('/update-inventory', updateInventory);
 
 module.exports = router;

@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const Razorpay = require('razorpay');
-const crypto = require('crypto');
 const { validateOrder } = require('../controllers/validateOrder');
 const { updateInventory } = require('../controllers/updateInventory');
 

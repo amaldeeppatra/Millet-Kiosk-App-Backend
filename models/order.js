@@ -1,4 +1,4 @@
-const { Schema, model } = require("mongoose");
+const { Schema, model, Types } = require("mongoose");
 
 const orderSchema = new Schema(
   {
@@ -19,6 +19,10 @@ const orderSchema = new Schema(
           type: String,
           required: true,
         },
+        prodName: {
+          type: String,
+          required: true,
+        },
         quantity: {
           type: Number,
           required: true,
@@ -26,20 +30,14 @@ const orderSchema = new Schema(
       },
     ],
     totalPrice: {
-      type: Decimal128,
+      type: Types.Decimal128,
       required: true,
-    },
-    paymentStatus: {
-      type: String,
-      required: true,
-      default: "PENDING",
-      enum: ["PENDING", "COMPLETED", "FAILED"],
     },
     orderStatus: {
       type: String,
       required: true,
       default: "PLACED",
-      enum: ["PLACED", "PROCESSING", "COMPLETED", "CANCELLED"],
+      enum: ["PLACED", "COMPLETED"],
     },
     transactionId: {
       type: String,

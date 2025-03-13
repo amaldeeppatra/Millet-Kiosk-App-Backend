@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 async function validateOrder (req, res) {
     try{
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -9,7 +10,7 @@ async function validateOrder (req, res) {
         }
 
         res.json({
-            msg: 'Payment successful!',
+            messsage: 'success',
             orderId: razorpay_order_id,
             paymentId: razorpay_payment_id
         });

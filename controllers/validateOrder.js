@@ -34,8 +34,8 @@ async function validateOrder(req, res) {
 
         res.json({
             message: 'success',
-            orderId: newOrder.orderId,
-            paymentId: newOrder.transactionId
+            orderId: razorpay_order_id,
+            paymentId: razorpay_payment_id
         });
     } catch (err) {
         console.error("Error processing order:", err);

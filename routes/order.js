@@ -5,6 +5,7 @@ const { validateOrder } = require('../controllers/validateOrder');
 const { updateInventory } = require('../controllers/updateInventory');
 const { getPlacedOrders } = require('../controllers/getPlacedOrders');
 const { getCompletedOrders } = require('../controllers/getCompletedOrders');
+const { completeOrder } = require('../controllers/changeOrderStatus');
 
 const router = express.Router();
 
@@ -37,5 +38,8 @@ router.post('/update-inventory', updateInventory);
 router.get('/get-placed', getPlacedOrders);
 
 router.get('/get-completed', getCompletedOrders);
+
+// PATCH /order/complete/:orderId
+router.patch("/complete/:orderId", completeOrder);
 
 module.exports = router;

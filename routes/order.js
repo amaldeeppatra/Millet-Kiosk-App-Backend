@@ -3,6 +3,8 @@ const express = require('express');
 const Razorpay = require('razorpay');
 const { validateOrder } = require('../controllers/validateOrder');
 const { updateInventory } = require('../controllers/updateInventory');
+const { getPlacedOrders } = require('../controllers/getPlacedOrders');
+const { getCompletedOrders } = require('../controllers/getCompletedOrders');
 
 const router = express.Router();
 
@@ -31,5 +33,9 @@ router.post('/', async (req, res) => {
 router.post('/validate', validateOrder);
 
 router.post('/update-inventory', updateInventory);
+
+router.get('/get-placed', getPlacedOrders);
+
+router.get('/get-completed', getCompletedOrders);
 
 module.exports = router;

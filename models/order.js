@@ -17,7 +17,8 @@ const orderSchema = new Schema(
       sparse: true,
     },
     userId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: 'user',
       required: true,
     },
     items: [

@@ -2,6 +2,13 @@ const { Schema, model, Types } = require("mongoose");
 
 const orderSchema = new Schema(
   {
+    orderNo: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+      sparse: true,
+    },
     orderId: {
       type: String,
       required: true,

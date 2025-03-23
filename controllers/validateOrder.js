@@ -1,65 +1,92 @@
-const crypto = require('crypto');
-const Order = require('../models/order'); 
-const sendmail = require('../utils/nodeMailer');
+const crypto = require("crypto");
+const Order = require("../models/order");
+const sendmail = require("../utils/nodeMailer");
 
 async function validateOrder(req, res) {
-    try {
-        const { 
-            razorpay_order_id, 
-            razorpay_payment_id, 
-            razorpay_signature, 
-            cartItems, 
-            userId, 
-            totalPrice, 
-            email, 
-            name
-        } = req.body;
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      cartItems,
+      userId,
+      totalPrice,
+      email,
+      name,
+    } = req.body;
 
-        // Validate signature (unchanged)
-        const sha = crypto.createHmac('sha256', process.env.RAZORPAY_SECRET);
-        sha.update(`${razorpay_order_id}|${razorpay_payment_id}`);
-        const digest = sha.digest('hex');
+    // Validate signature (unchanged)
+    const sha = crypto.createHmac("sha256", process.env.RAZORPAY_SECRET);
+    sha.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+    const digest = sha.digest("hex");
 
-        if (digest !== razorpay_signature) {
-            return res.status(400).json({ msg: 'Transaction not legit!' });
-        }
+    if (digest !== razorpay_signature) {
+      return res.status(400).json({ msg: "Transaction not legit!" });
+    }
 
-        // Create order items (unchanged)
-        const orderItems = cartItems.map(item => ({
-            prodId: item.prodId,
-            prodName: item.prodName,
-            quantity: item.quantity
-        }));
+    // Generate OrderNo in MMYYXXXX format
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, "0"); // Ensure 2-digit month
+    const year = String(now.getFullYear()).slice(-2); // Last 2 digits of year
 
-        // Create and save the order (unchanged)
-        const newOrder = new Order({
-            orderId: razorpay_order_id,
-            userId,
-            items: orderItems,
-            totalPrice,
-            transactionId: razorpay_payment_id
-        });
+    // Fetch the latest order of the same month-year
+    const latestOrder = await Order.findOne(
+      { orderNo: new RegExp(`^${year}${month}`) }, // Match orders from this month
+      {},
+      { sort: { orderNo: -1 } } // Get the latest order
+    );
 
-        await newOrder.save();
+    let nextOrderNumber = 1;
+    if (latestOrder) {
+      // Extract last 4 digits and increment
+      const lastNumber = parseInt(latestOrder.orderNo.slice(-4), 10);
+      nextOrderNumber = lastNumber + 1;
+    }
 
-        // Format date for the email
-        const orderDate = new Date().toLocaleDateString('en-US', {
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric'
-        });
-        
-        // Create item list HTML
-        const itemsHTML = cartItems.map(item => `
+    // Generate new order number
+    const orderNo = `${year}${month}${String(nextOrderNumber).padStart(4,"0")}`;
+
+    // Create order items (unchanged)
+    const orderItems = cartItems.map((item) => ({
+      prodId: item.prodId,
+      prodName: item.prodName,
+      quantity: item.quantity,
+    }));
+
+    // Create and save the order (updated to include orderNo)
+    const newOrder = new Order({
+        orderNo,
+        orderId: razorpay_order_id,
+        userId,
+        items: orderItems,
+        totalPrice,
+        transactionId: razorpay_payment_id,
+    });
+
+    await newOrder.save();
+
+    // Format date for the email
+    const orderDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Create item list HTML
+    const itemsHTML = cartItems
+      .map(
+        (item) => `
             <tr>
                 <td style="padding: 10px; border-bottom: 1px solid #eeeeee;">${item.prodName}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #eeeeee; text-align: center;">${item.quantity}</td>
             </tr>
-        `).join('');
+        `
+      )
+      .join("");
 
-        // Improved email template
-        const subject = 'Your Order Confirmation - Thank You!';
-        const htmlContent = `
+    // Improved email template
+    const subject = "Your Order Confirmation - Thank You!";
+    const htmlContent = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -76,14 +103,16 @@ async function validateOrder(req, res) {
                 
                 <!-- Personal greeting -->
                 <div style="margin-bottom: 30px;">
-                    <p style="font-size: 16px;">Dear ${name || 'Valued Customer'},</p>
+                    <p style="font-size: 16px;">Dear ${
+                      name || "Valued Customer"
+                    },</p>
                     <p style="font-size: 16px;">Thank you for your purchase! We're delighted to confirm that your order has been successfully placed and is being processed.</p>
                 </div>
                 
                 <!-- Order details -->
                 <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 30px;">
                     <h2 style="color: #4a4a4a; margin-top: 0; font-size: 18px;">Order Summary</h2>
-                    <p><strong>Order ID:</strong> ${razorpay_order_id}</p>
+                    <p><strong>Order No:</strong> ${orderNo}</p>
                     <p><strong>Date:</strong> ${orderDate}</p>
                     <p><strong>Payment ID:</strong> ${razorpay_payment_id}</p>
                     <p><strong>Total Amount:</strong> ₹${totalPrice}</p>
@@ -116,19 +145,20 @@ async function validateOrder(req, res) {
         </html>
         `;
 
-        // Send confirmation email
-        sendmail(email, subject, htmlContent);
+    // Send confirmation email
+    sendmail(email, subject, htmlContent);
 
-        // Response unchanged
-        res.json({
-            message: 'success',
-            orderId: razorpay_order_id,
-            paymentId: razorpay_payment_id
-        });
-    } catch (err) {
-        console.error("Error processing order:", err);
-        return res.status(500).json({ msg: "Internal server error" });
-    }
+    // Response unchanged
+    res.json({
+      message: "success",
+      orderId: razorpay_order_id,
+      orderNo: orderNo, // Include orderNo in response
+      paymentId: razorpay_payment_id,
+    });
+  } catch (err) {
+    console.error("Error processing order:", err);
+    return res.status(500).json({ msg: "Internal server error" });
+  }
 }
 
 module.exports = { validateOrder };

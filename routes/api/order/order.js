@@ -1,13 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const Razorpay = require('razorpay');
-const { validateOrder } = require('../controllers/validateOrder');
-const { updateInventory } = require('../controllers/updateInventory');
-const { getPlacedOrders } = require('../controllers/getPlacedOrders');
-const { getCompletedOrders } = require('../controllers/getCompletedOrders');
-const { completeOrder } = require('../controllers/changeOrderStatus');
-const { getOrderById } = require('../controllers/getOrderById');
-const { getOrderByUser } = require('../controllers/getOrderByUser');
+const { validateOrder } = require('../../../controllers/validateOrder');
+const { updateInventory } = require('../../../controllers/updateInventory');
+const { getPlacedOrders } = require('../../../controllers/getPlacedOrders');
+const { getCompletedOrders } = require('../../../controllers/getCompletedOrders');
+const { completeOrder } = require('../../../controllers/changeOrderStatus');
+const { getOrderById } = require('../../../controllers/getOrderById');
+const { getOrderByUser } = require('../../../controllers/getOrderByUser');
 
 const router = express.Router();
 

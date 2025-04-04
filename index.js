@@ -13,12 +13,12 @@ const mongoose = require("mongoose");
 require('https').globalAgent.options.rejectUnauthorized = false;
 
 const passport = require('./config/passport');
-const authRoutes = require('./routes/auth');
-const productRoutes = require('./routes/newProduct');
-const getProdByCat = require('./routes/getProduct');
-const searchRoutes = require('./routes/search');
-const orderRouter = require('./routes/order');
-const rateProductRouter = require('./routes/rateProduct');
+// const authRoutes = require('./routes/auth');
+// const productRoutes = require('./routes/newProduct');
+// const getProdByCat = require('./routes/getProduct');
+// const searchRoutes = require('./routes/search');
+// const orderRouter = require('./routes/order');
+// const rateProductRouter = require('./routes/rateProduct');
 
 // app.use(cors({ origin: ['http://10.2.99.211:5173', 'http://localhost:5173', 'https://millet-kiosk-app.vercel.app', 'http://10.2.105.237:5173'], credentials: true }));
 // app.use(cors({ origin: ["https://millet-kiosk-app.vercel.app", "http://localhost:5173"], credentials: true }));
@@ -61,12 +61,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 mongoose.connect(process.env.MONGO_URI).then((e) => console.log("Mongodb connected"));
 
-app.use('/auth', authRoutes);
-app.use('/product', productRoutes);
-app.use('/products', getProdByCat);
-app.use('/search', searchRoutes);
-app.use('/order', orderRouter);
-app.use('/rate', rateProductRouter);
+app.use('/api', require('./routes/api/index'));
+
+// app.use('/api/auth', authRoutes);
+// app.use('/product', productRoutes);
+// app.use('/products', getProdByCat);
+// app.use('/search', searchRoutes);
+// app.use('/order', orderRouter);
+// app.use('/rate', rateProductRouter);
 
 app.get('/', (req, res) => {
   res.send('running')

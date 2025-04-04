@@ -2,8 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
-const { loginSuccess, logout } = require('../controllers/authController');
-const { createTokenForUser } = require('../services/authentication');
+const { loginSuccess, logout } = require('../../../controllers/authController');
+const { createTokenForUser } = require('../../../services/authentication');
 
 const router = express.Router();
 

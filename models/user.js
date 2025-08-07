@@ -34,7 +34,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
       default: "CUSTOMER",
-      enum: ["CUSTOMER", "ADMIN"],
+      enum: ["CUSTOMER", "SELLER", "ADMIN"],
     },
   },
   { timestamps: true }

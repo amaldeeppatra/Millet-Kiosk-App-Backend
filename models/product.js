@@ -1,4 +1,5 @@
-const { Schema, model } = require("mongoose");
+const mongoose = require("mongoose");
+const { Schema, model, Types } = mongoose;
 const Decimal128 = require('mongodb').Decimal128;
 
 const productSchema = new Schema({
@@ -47,6 +48,6 @@ const productSchema = new Schema({
   }
 });
 
-const Product = model("product", productSchema);
+const Product = mongoose.models.product || mongoose.model("product", productSchema);
 
 module.exports = Product;

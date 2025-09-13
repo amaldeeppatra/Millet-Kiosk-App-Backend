@@ -20,6 +20,7 @@ router.get(
   (req, res) => {
     const token = createTokenForUser(req.user);
     const role = req.user.role;
+    console.log(role)
 
     if (role === "CUSTOMER") {
       return res.redirect(

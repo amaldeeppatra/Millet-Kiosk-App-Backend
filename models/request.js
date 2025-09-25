@@ -11,12 +11,17 @@ const requestSchema = new Schema(
             sparse: true,
         },
         prodId: {
-            type: String,
+            type: Schema.Types.ObjectId,
+            ref: 'product',
             required: true,
         },
         sellerId: {
             type: String,
             required: true,
+        },
+        quantity: {
+            type: Number,
+            reuqired: true,
         },
         message: {
             type: String,
@@ -31,6 +36,7 @@ const requestSchema = new Schema(
     , { timestamps: true }
 )
 
-const Request = model("request", requestSchema);
+// const Request = model("request", requestSchema);
+const Request = mongoose.models.request || mongoose.model("request", requestSchema);
 
 module.exports = Request;

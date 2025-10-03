@@ -34,4 +34,24 @@ async function changeUserRole(req, res) {
     }
 }
 
-module.exports = changeUserRole;
+async function getAllSellers(req, res) {
+    try {
+        const sellers = await User.find({ role: 'SELLER' })
+            .select('name email _id')
+            .sort({ name: 1 });
+        
+        return res.json({ 
+            success: true,
+            sellers,
+            count: sellers.length
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false,
+            message: 'Error fetching sellers', 
+            error: error.message 
+        });
+    }
+}
+
+module.exports = { changeUserRole, getAllSellers };

@@ -16,7 +16,8 @@ const requestSchema = new Schema(
             required: true,
         },
         sellerId: {
-            type: String,
+            type: Schema.Types.ObjectId,
+            ref: 'user',
             required: true,
         },
         quantity: {

@@ -1,4 +1,4 @@
-const Product = require("../models/product"); // Assuming you have a Product model
+const Product = require("../models/product");
 
 const updateStock = async (req, res) => {
     try {

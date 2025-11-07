@@ -24,7 +24,8 @@ const passport = require('./config/passport');
 // app.use(cors({ origin: ["https://millet-kiosk-app.vercel.app", "http://localhost:5173"], credentials: true }));
 const allowedOrigins = [
   "https://millet-kiosk-app.vercel.app",
-  "http://localhost:5173"
+  "http://localhost:5173",
+  "http://localhost:5174"
 ];
 
 app.use(cors({

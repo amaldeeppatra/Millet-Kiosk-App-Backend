@@ -10,7 +10,14 @@ const router = express.Router();
 // Google OAuth login route
 router.get(
   "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  (req, res, next) => {
+    // Pass the state from frontend to Passport
+    const state = req.query.state || "kiosk";
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
+      state, // this will be preserved by Google
+    })(req, res, next);
+  }
 );
 
 // Google OAuth callback route
@@ -18,22 +25,29 @@ router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
+    console.log("✅ Google callback received with query:", req.query);
     const token = createTokenForUser(req.user);
     const role = req.user.role;
-    console.log(role)
+    const platform = req.query.state || 'kiosk'; // Extracts 'integrated' from state
+
+    let redirectBase =
+      platform === 'integrated'
+        ? process.env.VITE_APP_URL_INTEGRATED
+        : process.env.VITE_APP_URL;
+
+    console.log("Redirecting to:", redirectBase);
+    if (platform === "integrated") {
+      return res.redirect(`${redirectBase}/?token=${token}`);
+    }
 
     if (role === "CUSTOMER") {
-      return res.redirect(
-        `${process.env.VITE_APP_URL}/homepage?token=${token}`
-      );
+      return res.redirect(`${redirectBase}/homepage?token=${token}`);
     } else {
-      // For SELLER or ADMIN
-      return res.redirect(
-        `${process.env.VITE_APP_URL}/choose-role?token=${token}&role=${role}`
-      );
+      return res.redirect(`${redirectBase}/choose-role?token=${token}&role=${role}`);
     }
   }
 );
+
 
 router.get("/verify", (req, res) => {
   const token = req.cookies.token;

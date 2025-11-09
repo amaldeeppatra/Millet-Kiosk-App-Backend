@@ -1,5 +1,11 @@
 exports.loginSuccess = (req, res) => {
     if (req.user) {
+      res.cookie('auth_token', token, {
+            httpOnly: true, // Prevents client-side JS from accessing the cookie
+            secure: process.env.NODE_ENV === 'production', // Send only over HTTPS in production
+            sameSite: 'strict', // Mitigates CSRF attacks
+            maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+      });
       res.status(200).json({
         success: true,
         message: 'User successfully authenticated',

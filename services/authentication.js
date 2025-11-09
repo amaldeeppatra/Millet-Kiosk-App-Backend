@@ -9,7 +9,7 @@ function createTokenForUser(user){
         user: user,
     };
     const options = {
-        expiresIn: '1h' // Token expires in 7 hours
+        expiresIn: '1h'
     };
     const token = JWT.sign(payload, secret, options);
 

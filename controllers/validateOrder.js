@@ -15,6 +15,8 @@ async function validateOrder(req, res) {
       name,
     } = req.body;
 
+    // console.log(req.body);
+
     // Validate signature (unchanged)
     const sha = crypto.createHmac("sha256", process.env.RAZORPAY_SECRET);
     sha.update(`${razorpay_order_id}|${razorpay_payment_id}`);

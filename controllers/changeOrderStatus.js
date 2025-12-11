@@ -1,52 +1,33 @@
 const Order = require('../models/order');
 
-// async function completeOrder(req, res){
-//     try {
-//         const { orderId } = req.params;
-
-//         // Find the order using the provided orderId
-//         const order = await Order.findOne({ orderId });
-//         if (!order) {
-//         return res.status(404).json({ error: "Order not found" });
-//         }
-
-//         // Ensure the order is currently in 'PLACED' status before updating
-//         if (order.orderStatus !== "PLACED") {
-//         return res.status(400).json({ error: "Only orders with status PLACED can be updated to COMPLETED" });
-//         }
-
-//         // Update the status to COMPLETED and save
-//         order.orderStatus = "COMPLETED";
-//         await order.save();
-
-//         res.status(200).json({ message: "Order status updated to COMPLETED", order });
-//     } catch (err) {
-//         console.error("Error updating order:", err);
-//         res.status(500).json({ error: "Internal Server Error" });
-//     }
-// }
-
-async function completeOrder(req, res){
+async function completeOrder(req, res) {
     try {
-        const { orderId } = req.params;
+        const { orderId, shopId } = req.params;   // ⬅️ shopId + orderId
 
-        // Find and update the order in one operation
+        if (!shopId) {
+            return res.status(400).json({ error: "shopId is required" });
+        }
+
+        // Update ONLY the order that:
+        // 1. Belongs to this shop
+        // 2. Is currently in PLACED state
         const order = await Order.findOneAndUpdate(
-            { orderId, orderStatus: "PLACED" }, // Only update if status is PLACED
+            { orderId, shopId, orderStatus: "PLACED" },
             { orderStatus: "COMPLETED" },
-            { new: true } // Return the updated document
+            { new: true }
         );
 
         if (!order) {
-            return res.status(404).json({ 
-                error: "Order not found or not in PLACED status" 
+            return res.status(404).json({
+                error: "Order not found in this shop or not in PLACED status"
             });
         }
 
-        res.status(200).json({ 
-            message: "Order status updated to COMPLETED", 
-            order 
+        res.status(200).json({
+            message: "Order status updated to COMPLETED",
+            order
         });
+
     } catch (err) {
         console.error("Error updating order:", err);
         res.status(500).json({ error: "Internal Server Error" });

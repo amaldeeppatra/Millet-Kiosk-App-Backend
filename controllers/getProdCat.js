@@ -17,7 +17,7 @@ const getProductsByCategories = async (req, res) => {
             prodDesc: product.prodDesc,
             category: product.category,
             price: parseFloat(product.price.toString()),
-            stock: product.stock,
+            // stock: product.stock,
             rating: parseFloat(product.rating.toString()),
         }));
 

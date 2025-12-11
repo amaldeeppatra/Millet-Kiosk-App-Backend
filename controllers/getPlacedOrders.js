@@ -2,8 +2,17 @@ const Order = require('../models/order');
 
 async function getPlacedOrders(req, res) {
     try {
-        const placedOrders = await Order.find({orderStatus: "PLACED"})
-            .populate('userId', 'name email') // Populate user details
+        const { shopId } = req.params;  // ⬅️ shopId comes from URL
+
+        if (!shopId) {
+            return res.status(400).json({ error: "shopId is required" });
+        }
+
+        const placedOrders = await Order.find({
+                orderStatus: "PLACED",
+                shopId: shopId         // ⬅️ filter by shop
+            })
+            .populate('userId', 'name email')
             .exec();
             
         res.json(placedOrders);

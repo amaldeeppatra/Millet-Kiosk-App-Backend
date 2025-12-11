@@ -1,128 +1,132 @@
 const Product = require('../../models/product');
-const Request = require('../../models/request');
+const Request = require('../../models/stockRequest');
 const shortid = require('shortid');
+const InventoryItem = require('../../models/inventoryItem');
 
-async function sendRequestController(req, res){
+async function sendRequestController(req, res) {
+  try {
     const { sellerId } = req.params;
-    const { prodId, message, quantity } = req.body;
-    console.log(`Request to seller ${sellerId} for product ${prodId} with message: ${message} and quantity: ${quantity}`);
-    try{
-        const product = await Product.findOne({prodId: prodId});
-        if(!product){
-            return res.status(404).json({ success: false, message: 'Product not found' });
-        }
-        const newRequest = new Request({
-            requestId: `req_${shortid.generate()}`,
-            prodId: product._id,
-            sellerId,
-            message,
-            quantity: quantity || 1,
-            status: 'pending'
-        });
-        await newRequest.save();
-        res.status(200).json({ success: true, message: 'Request sent successfully', data: { sellerId, prodId, message, quantity } });
-    } catch (error){
-        return res.status(500).json({ success: false, message: error.message });
+    const { prodId, message, quantity, shopId } = req.body;
+
+    if (!shopId) {
+      return res.status(400).json({ success: false, message: "shopId is required" });
     }
+
+    const product = await Product.findOne({ prodId });
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+
+    const newRequest = new Request({
+      requestId: `req_${shortid.generate()}`,
+      prodId: product._id,
+      sellerId,
+      shopId,
+      message,
+      quantity: quantity || 1,
+      status: 'pending'
+    });
+
+    await newRequest.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Request sent successfully',
+      data: newRequest
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 }
 
-async function getAllRequestsByIdController(req, res){
+async function getAllRequestsByIdController(req, res) {
+  try {
     const { sellerId } = req.params;
-    try{
-        const requests = await Request.find({ sellerId }).populate("prodId", "prodId prodName category -_id");
-        res.status(200).json({ success: true, requests });
-    } catch (error){
-        res.status(500).json({ success: false, message: error.message });
-    }
+    const requests = await Request.find({ sellerId })
+      .populate("prodId", "prodId prodName category")
+      .populate("shopId", "name");   // shop name here
+
+    res.status(200).json({ success: true, requests });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 }
 
 async function getAllRequests(req, res) {
-    try {
-        const requests = await Request.find().populate("prodId", "prodId prodName category -_id");
-        res.status(200).json({ success: true, requests });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+  try {
+    const requests = await Request.find()
+      .populate("prodId", "prodId prodName category")
+      .populate("shopId", "name");
+
+    res.status(200).json({ success: true, requests });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 }
 
 // Accept request and update stock
 async function acceptRequest(req, res) {
-    try {
-        const { id } = req.params;
-        const { quantity } = req.body;
+  try {
+    const { id } = req.params;
+    const { quantity } = req.body;
 
-        // Find the request
-        const request = await Request.findById(id).populate('prodId');
-        
-        if (!request) {
-            return res.status(404).json({ success: false, msg: "Request not found" });
-        }
+    const request = await Request.findById(id).populate("prodId");
+    if (!request) return res.status(404).json({ success: false, msg: "Request not found" });
 
-        if (request.status !== 'pending') {
-            return res.status(400).json({ success: false, msg: "Request already processed" });
-        }
+    if (request.status !== "pending")
+      return res.status(400).json({ success: false, msg: "Request already processed" });
 
-        // Validate quantity
-        if (!quantity || quantity < 10) {
-            return res.status(400).json({ success: false, msg: "Minimum restock amount is 10" });
-        }
+    if (!quantity || quantity < 10)
+      return res.status(400).json({ success: false, msg: "Minimum restock amount is 10" });
 
-        // Find and update the product stock using the prodId from the populated request
-        const product = await Product.findOne({ prodId: request.prodId.prodId });
+    // Update inventory for that shop
+    const inventoryItem = await InventoryItem.findOne({
+      shopId: request.shopId,
+      productId: request.prodId._id
+    });
 
-        if (!product) {
-            return res.status(404).json({ success: false, msg: "Product not found" });
-        }
-
-        // Update stock
-        product.stock += quantity;
-        await product.save();
-
-        // Update request status
-        request.status = 'accepted';
-        await request.save();
-
-        res.json({ 
-            success: true,
-            msg: "Request accepted and stock updated successfully", 
-            stock: product.stock,
-            request 
-        });
-    } catch (err) {
-        console.error("Error accepting request:", err);
-        res.status(500).json({ success: false, msg: "Internal server error", message: err.message });
+    if (!inventoryItem) {
+      // Auto-create inventory row if it doesn't exist
+      await InventoryItem.create({
+        shopId: request.shopId,
+        productId: request.prodId._id,
+        onHand: quantity
+      });
+    } else {
+      inventoryItem.onHand += quantity;
+      await inventoryItem.save();
     }
+
+    request.status = "accepted";
+    await request.save();
+
+    res.json({
+      success: true,
+      msg: "Request accepted & inventory updated",
+      request
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, msg: err.message });
+  }
 }
 
 // Reject request
 async function rejectRequest(req, res) {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        // Find the request
-        const request = await Request.findById(id);
-        
-        if (!request) {
-            return res.status(404).json({ success: false, msg: "Request not found" });
-        }
+    const request = await Request.findById(id);
+    if (!request) return res.status(404).json({ success: false, msg: "Request not found" });
+    if (request.status !== "pending")
+      return res.status(400).json({ success: false, msg: "Request already processed" });
 
-        if (request.status !== 'pending') {
-            return res.status(400).json({ success: false, msg: "Request already processed" });
-        }
+    request.status = 'rejected';
+    await request.save();
 
-        // Update request status
-        request.status = 'rejected';
-        await request.save();
-
-        res.json({ 
-            success: true,
-            msg: "Request rejected successfully",
-            request 
-        });
-    } catch (err) {
-        console.error("Error rejecting request:", err);
-        res.status(500).json({ success: false, msg: "Internal server error", message: err.message });
-    }
+    res.json({ success: true, msg: "Request rejected", request });
+  } catch (err) {
+    res.status(500).json({ success: false, msg: err.message });
+  }
 }
 
 module.exports = { 

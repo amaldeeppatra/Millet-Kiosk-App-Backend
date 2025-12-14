@@ -30,10 +30,10 @@ const productSchema = new Schema({
     type: Decimal128,
     required: true,
   },
-  stock: {
-    type: Number,
-    required: true,
-  },
+  // stock: {
+  //   type: Number,
+  //   required: true,
+  // },
   rating: {
     type: Decimal128,
     required: true,

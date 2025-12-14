@@ -1,4 +1,5 @@
-const { Schema, model } = require("mongoose");
+const mongoose = require("mongoose");
+const { Schema, model, Types } = mongoose;
 
 const userSchema = new Schema(
   {
@@ -36,10 +37,16 @@ const userSchema = new Schema(
       default: "CUSTOMER",
       enum: ["CUSTOMER", "SELLER", "ADMIN"],
     },
+    shopId: {
+      type: Schema.Types.ObjectId,
+      ref: "shop",
+      default: null, // seller: has, customer/admin: null
+    },
   },
   { timestamps: true }
 );
 
-const User = model("user", userSchema);
+// const User = model("user", userSchema);
+const User = mongoose.models.user || mongoose.model("user", userSchema);
 
 module.exports = User;

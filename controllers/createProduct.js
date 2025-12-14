@@ -1,7 +1,8 @@
 const Product = require("../models/product");
 
 async function createProduct(req, res) {
-    const { prodId, prodName, prodDesc, category, price, stock, rating, prodImg } = req.body;
+    // const { prodId, prodName, prodDesc, category, price, stock, rating, prodImg } = req.body;
+    const { prodId, prodName, prodDesc, category, price, rating, prodImg } = req.body;
     try {
         // const prodImg = req.file ? req.file.path : null;
         const newProduct = new Product({
@@ -10,7 +11,7 @@ async function createProduct(req, res) {
             prodDesc,
             category,
             price,
-            stock,
+            // stock,
             rating,
             prodImg
         });
@@ -23,7 +24,7 @@ async function createProduct(req, res) {
             prodDesc: newProduct.prodDesc,
             category: newProduct.category,
             price: newProduct.price,
-            stock: newProduct.stock,
+            // stock: newProduct.stock,
             rating: newProduct.rating
         });
     } catch (error) {

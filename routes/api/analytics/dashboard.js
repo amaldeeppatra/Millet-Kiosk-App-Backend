@@ -1,7 +1,7 @@
 // analytics.js - New analytics routes to add to your backend
-
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 
 // Import your models - adjust paths according to your structure
 const Order = require('../../../models/order');
@@ -17,28 +17,35 @@ const decimal128ToNumber = (decimal128) => {
 // Get dashboard analytics summary
 router.get('/dashboard', async (req, res) => {
   try {
+    const shopId = req.query.shopId; // from frontend
+    if (!shopId) {
+      return res.status(400).json({ success: false, msg: "shopId query param is required" });
+    }
+
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-    
-    // Today's revenue
+
+    // TODAY'S REVENUE (filtered by shop)
     const todayOrders = await Order.find({
       orderStatus: 'COMPLETED',
+      shopId, // 👈 filter applied
       createdAt: { $gte: startOfDay, $lt: endOfDay }
     });
     const todayRevenue = todayOrders.reduce((sum, order) => sum + decimal128ToNumber(order.totalPrice), 0);
 
-    // Total statistics
-    const totalOrders = await Order.countDocuments();
-    const completedOrders = await Order.find({ orderStatus: 'COMPLETED' });
+    // ALL COMPLETED ORDERS (filtered by shop)
+    const completedOrders = await Order.find({ orderStatus: 'COMPLETED', shopId });
+
     const totalSales = completedOrders.reduce((sum, order) => sum + decimal128ToNumber(order.totalPrice), 0);
-    
-    // Average order value
+    const totalOrders = await Order.countDocuments({ shopId });
     const avgOrderValue = completedOrders.length > 0 ? totalSales / completedOrders.length : 0;
 
-    // Total products and users
+    // TOTAL PRODUCTS OF THAT SHOP ONLY
     const totalProducts = await Product.countDocuments();
-    const totalUsers = await User.countDocuments();
+
+    // TOTAL USERS WHO ORDERED FROM THAT SHOP
+    const totalUsers = await Order.distinct('userId', { shopId }).then(list => list.length);
 
     res.json({
       success: true,
@@ -52,7 +59,9 @@ router.get('/dashboard', async (req, res) => {
         totalUsers
       }
     });
+
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -60,38 +69,38 @@ router.get('/dashboard', async (req, res) => {
 // Get revenue trend (last 7 days)
 router.get('/revenue-trend', async (req, res) => {
   try {
+    const shopId = req.query.shopId;
+    if (!shopId) return res.status(400).json({ success: false, error: "shopId is required" });
+
     const days = parseInt(req.query.days) || 7;
     const includeAllOrders = req.query.includeAll === 'true';
     const trends = [];
-    
+
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
-      
-      // Query condition - either only COMPLETED or all orders
+
+      const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const end = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+
       const queryCondition = {
-        createdAt: { $gte: startOfDay, $lt: endOfDay }
+        shopId,
+        createdAt: { $gte: start, $lt: end }
       };
-      
-      if (!includeAllOrders) {
-        queryCondition.orderStatus = 'COMPLETED';
-      }
-      
+      if (!includeAllOrders) queryCondition.orderStatus = 'COMPLETED';
+
       const dayOrders = await Order.find(queryCondition);
-      
-      // Separate completed and placed orders for better analytics
-      const completedOrders = dayOrders.filter(order => order.orderStatus === 'COMPLETED');
-      const placedOrders = dayOrders.filter(order => order.orderStatus === 'PLACED');
-      
-      const dayRevenue = completedOrders.reduce((sum, order) => sum + decimal128ToNumber(order.totalPrice), 0);
-      const pendingRevenue = placedOrders.reduce((sum, order) => sum + decimal128ToNumber(order.totalPrice), 0);
-      
+
+      const completedOrders = dayOrders.filter(o => o.orderStatus === 'COMPLETED');
+      const placedOrders = dayOrders.filter(o => o.orderStatus === 'PLACED');
+
+      const dayRevenue = completedOrders.reduce((sum, o) => sum + decimal128ToNumber(o.totalPrice), 0);
+      const pendingRevenue = placedOrders.reduce((sum, o) => sum + decimal128ToNumber(o.totalPrice), 0);
+
       trends.push({
-        date: startOfDay.toISOString().split('T')[0],
+        date: start.toISOString().split('T')[0],
         revenue: dayRevenue,
-        pendingRevenue: pendingRevenue,
+        pendingRevenue,
         orders: completedOrders.length,
         placedOrders: placedOrders.length,
         totalOrders: dayOrders.length
@@ -99,6 +108,7 @@ router.get('/revenue-trend', async (req, res) => {
     }
 
     res.json({ success: true, data: trends });
+
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -107,11 +117,23 @@ router.get('/revenue-trend', async (req, res) => {
 // Get best selling products
 router.get('/products/best-selling', async (req, res) => {
   try {
+    const shopId = req.query.shopId;
     const limit = parseInt(req.query.limit) || 10;
-    
-    // Get products with sales data
+
+    if (!shopId) {
+      return res.status(400).json({ success: false, message: "shopId is required" });
+    }
+
+    // Convert shopId => ObjectId
+    const shopObjectId = new mongoose.Types.ObjectId(shopId);
+
     const productSales = await Order.aggregate([
-      { $match: { orderStatus: 'COMPLETED' } },
+      { 
+        $match: { 
+          orderStatus: 'COMPLETED', 
+          shopId: shopObjectId 
+        } 
+      },
       { $unwind: '$items' },
       {
         $group: {
@@ -120,29 +142,28 @@ router.get('/products/best-selling', async (req, res) => {
           productName: { $first: '$items.prodName' }
         }
       },
-      { $sort: { totalQuantity: -1 } }, // Descending for best selling
+      { $sort: { totalQuantity: -1 } },
       { $limit: limit }
     ]);
 
-    // Get product details and combine with sales data
+    // Fetch product details
     const bestSelling = await Promise.all(
-      productSales.map(async (sale) => {
+      productSales.map(async sale => {
         const product = await Product.findOne({ prodId: sale._id }).lean();
-        
         return {
           productId: sale._id,
           productName: sale.productName,
-          productImage: product ? product.prodImg : null,
+          productImage: product?.prodImg || null,
           totalQuantity: sale.totalQuantity,
-          totalRevenue: sale.totalQuantity * (product ? decimal128ToNumber(product.price) : 0),
-          price: product ? decimal128ToNumber(product.price) : 0
+          price: product ? decimal128ToNumber(product.price) : 0,
+          totalRevenue: sale.totalQuantity * (product ? decimal128ToNumber(product.price) : 0)
         };
       })
     );
 
     res.json({ success: true, data: bestSelling });
   } catch (error) {
-    console.error('Best selling products error:', error);
+    console.error("Best selling products error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -150,11 +171,16 @@ router.get('/products/best-selling', async (req, res) => {
 // Get least selling products
 router.get('/products/least-selling', async (req, res) => {
   try {
+    const shopId = req.query.shopId;
     const limit = parseInt(req.query.limit) || 10;
-    
-    // First, get all products with their sales data
+
+    if (!shopId) {
+      return res.status(400).json({ success: false, message: "shopId is required" });
+    }
+
+    // STEP 1 — Aggregate sales only for specific shop
     const productSales = await Order.aggregate([
-      { $match: { orderStatus: 'COMPLETED' } },
+      { $match: { orderStatus: 'COMPLETED', shopId: new mongoose.Types.ObjectId(shopId) } },
       { $unwind: '$items' },
       {
         $group: {
@@ -165,40 +191,36 @@ router.get('/products/least-selling', async (req, res) => {
       }
     ]);
 
-    // Get all products from the database
+    // STEP 2 — Load all products (least-selling includes unsold ones)
     const allProducts = await Product.find().lean();
-    
-    // Create a map of product sales for quick lookup
-    const salesMap = new Map();
-    productSales.forEach(sale => {
-      salesMap.set(sale._id, {
-        totalQuantity: sale.totalQuantity,
-        productName: sale.productName
-      });
-    });
 
-    // Combine all products with their sales data
+    // Create map for quick lookup
+    const salesMap = new Map(productSales.map(sale => [sale._id, sale.totalQuantity]));
+
+    // STEP 3 — Combine products with shop-wise sales quantities
     const productsWithSales = allProducts.map(product => {
-      const salesData = salesMap.get(product.prodId) || { totalQuantity: 0, productName: product.prodName };
-      
+      const qty = salesMap.get(product.prodId) || 0;  // zero if no sales in this shop
+      const price = decimal128ToNumber(product.price);
+
       return {
         productId: product.prodId,
-        productName: product.prodName, // Use product name from database
+        productName: product.prodName,
         productImage: product.prodImg,
-        totalQuantity: salesData.totalQuantity,
-        totalRevenue: salesData.totalQuantity * decimal128ToNumber(product.price),
-        price: decimal128ToNumber(product.price)
+        totalQuantity: qty,
+        price,
+        totalRevenue: qty * price
       };
     });
 
-    // Sort by total quantity (ascending for least selling) and take the limit
+    // STEP 4 — Sort by lowest qty first (least-selling)
     const leastSelling = productsWithSales
       .sort((a, b) => a.totalQuantity - b.totalQuantity)
       .slice(0, limit);
 
     res.json({ success: true, data: leastSelling });
+
   } catch (error) {
-    console.error('Least selling products error:', error);
+    console.error("Least selling products error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -206,45 +228,28 @@ router.get('/products/least-selling', async (req, res) => {
 // Get operational funnel (live status)
 router.get('/operational-funnel', async (req, res) => {
   try {
+    const shopId = req.query.shopId;
+    if (!shopId) return res.status(400).json({ success: false, msg: "shopId is required" });
+
     const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    
-    // Get order counts by status (your schema only has PLACED and COMPLETED)
-    const placedOrders = await Order.countDocuments({ orderStatus: 'PLACED' });
-    const completedOrders = await Order.countDocuments({ orderStatus: 'COMPLETED' });
-    
-    // Today's specific counts
-    const todayPlaced = await Order.countDocuments({ 
-      orderStatus: 'PLACED',
-      createdAt: { $gte: startOfDay }
-    });
-    const todayCompleted = await Order.countDocuments({ 
-      orderStatus: 'COMPLETED',
-      updatedAt: { $gte: startOfDay }
-    });
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-    // Since your schema only has PLACED and COMPLETED, we'll simulate a funnel
-    const funnelData = {
-      orders: {
-        placed: placedOrders,
-        completed: completedOrders,
-        // Simulated intermediate statuses for better funnel visualization
-        pending: Math.floor(placedOrders * 0.7), // 70% of placed orders are pending
-        processing: Math.floor(placedOrders * 0.2), // 20% are processing
-        shipped: Math.floor(placedOrders * 0.1), // 10% are shipped
-        delivered: completedOrders,
-        cancelled: 0 // Not in your schema, but added for completeness
-      },
-      today: {
-        newOrders: todayPlaced,
-        completedOrders: todayCompleted
-      },
-      totalActiveOrders: placedOrders
-    };
+    const placed = await Order.countDocuments({ orderStatus: 'PLACED', shopId });
+    const completed = await Order.countDocuments({ orderStatus: 'COMPLETED', shopId });
 
-    res.json({ success: true, data: funnelData });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    const todayPlaced = await Order.countDocuments({ orderStatus: 'PLACED', shopId, createdAt: { $gte: start } });
+    const todayCompleted = await Order.countDocuments({ orderStatus: 'COMPLETED', shopId, updatedAt: { $gte: start } });
+
+    res.json({
+      success: true,
+      data: {
+        orders: { placed, completed },
+        today: { newOrders: todayPlaced, completedOrders: todayCompleted },
+        totalActiveOrders: placed
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
   }
 });
 
@@ -252,17 +257,23 @@ router.get('/operational-funnel', async (req, res) => {
 router.get('/monthly-revenue', async (req, res) => {
   try {
     const year = parseInt(req.query.year) || new Date().getFullYear();
-    
+    const shopId = req.query.shopId; // ⬅️ shop filter added
+
+    const matchCondition = {
+      orderStatus: 'COMPLETED',
+      createdAt: {
+        $gte: new Date(year, 0, 1),
+        $lt: new Date(year + 1, 0, 1)
+      }
+    };
+
+    // apply shop filter only if shopId is provided
+    if (shopId) {
+      matchCondition.shopId = shopId;
+    }
+
     const monthlyData = await Order.aggregate([
-      {
-        $match: {
-          orderStatus: 'COMPLETED',
-          createdAt: {
-            $gte: new Date(year, 0, 1),
-            $lt: new Date(year + 1, 0, 1)
-          }
-        }
-      },
+      { $match: matchCondition },
       {
         $group: {
           _id: { $month: '$createdAt' },
@@ -276,8 +287,9 @@ router.get('/monthly-revenue', async (req, res) => {
     // Fill missing months with zero
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
     const result = months.map((month, index) => {
-      const data = monthlyData.find(item => item._id === index + 1);
+      const data = monthlyData.find(m => m._id === index + 1);
       return {
         month,
         revenue: data ? data.revenue : 0,
@@ -286,6 +298,7 @@ router.get('/monthly-revenue', async (req, res) => {
     });
 
     res.json({ success: true, data: result });
+
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -294,8 +307,12 @@ router.get('/monthly-revenue', async (req, res) => {
 // Get product performance by category
 router.get('/products/category-performance', async (req, res) => {
   try {
+    const shopId = req.query.shopId;
+
+    const matchCondition = { orderStatus: 'COMPLETED' };
+
     const categoryPerformance = await Order.aggregate([
-      { $match: { orderStatus: 'COMPLETED' } },
+      { $match: matchCondition },
       { $unwind: '$items' },
       {
         $lookup: {
@@ -326,6 +343,7 @@ router.get('/products/category-performance', async (req, res) => {
     ]);
 
     res.json({ success: true, data: categoryPerformance });
+
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

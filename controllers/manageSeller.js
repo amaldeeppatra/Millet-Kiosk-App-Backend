@@ -2,7 +2,7 @@ const User = require('../models/user');
 
 async function changeUserRole(req, res) {
     try {
-        const { email, action } = req.body;
+        const { email, action, shopId } = req.body;
         if (!email || !action) {
             return res.status(400).json({ message: 'Email and action are required' });
         }
@@ -13,10 +13,12 @@ async function changeUserRole(req, res) {
         }
 
         if (action === 'add') {
+            if (!shopId) return res.status(400).json({ message: "shopId is required to add seller" });
             if (user.role === 'SELLER') {
                 return res.status(200).json({ message: 'User is already a SELLER', user });
             }
             user.role = 'SELLER';
+            user.shopId = shopId;
             await user.save();
             return res.json({ message: 'User role changed to SELLER', user });
         } else if (action === 'remove') {
@@ -24,6 +26,7 @@ async function changeUserRole(req, res) {
                 return res.status(200).json({ message: 'User is already a CUSTOMER', user });
             }
             user.role = 'CUSTOMER';
+            user.shopId = null;
             await user.save();
             return res.json({ message: 'User is no longer a SELLER', user });
         } else {
@@ -38,6 +41,7 @@ async function getAllSellers(req, res) {
     try {
         const sellers = await User.find({ role: 'SELLER' })
             .select('name email _id')
+            .populate('shopId', 'name')
             .sort({ name: 1 });
         
         return res.json({ 

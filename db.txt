@@ -1,0 +1,235 @@
+================================================================================
+                    MILLET KIOSK APP - DATABASE SCHEMA DOCUMENTATION
+================================================================================
+
+Database Type: MongoDB
+ORM: Mongoose
+
+---
+
+## OVERVIEW
+The Millet Kiosk App database consists of 6 main collections that manage users, 
+products, orders, carts, ratings, and seller requests. The system supports 
+multi-role users (CUSTOMER, SELLER, ADMIN) and handles e-commerce operations 
+with Razorpay payment integration.
+
+---
+
+## DATABASE COLLECTIONS
+
+### 1. USER COLLECTION
+**Collection Name:** user
+**Purpose:** Store user authentication and profile information
+
+Fields:
+- userId (String, unique, indexed, sparse)
+  └─ Unique identifier for the user
+- googleId (String, unique, required)
+  └─ Google OAuth ID for authentication
+- name (String, required)
+  └─ User's full name
+- email (String, unique, required)
+  └─ User's email address
+- phone (String, optional)
+  └─ User's contact number
+- avatar (String, default: "")
+  └─ User's profile picture URL
+- role (String, enum: ["CUSTOMER", "SELLER", "ADMIN"], default: "CUSTOMER")
+  └─ User's role in the system
+- timestamps: createdAt, updatedAt
+
+Indexes: userId, googleId, email
+Use Cases: Authentication, user profile, role-based access control
+
+---
+
+### 2. PRODUCT COLLECTION
+**Collection Name:** product
+**Purpose:** Store product catalog and inventory information
+
+Fields:
+- prodId (String, unique, indexed, sparse)
+  └─ Unique product identifier
+- prodName (String, required)
+  └─ Product name
+- prodImg (String, required)
+  └─ Product image URL
+- prodDesc (String, required)
+  └─ Product description
+- category (String, required)
+  └─ Product category for filtering
+- price (Decimal128, required)
+  └─ Product price (high precision decimal)
+- stock (Number, required)
+  └─ Available quantity in inventory
+- rating (Decimal128, required)
+  └─ Average product rating (0-5 scale, high precision)
+- prodIngredients (String, default: "Not Available")
+  └─ List of product ingredients
+- prodNutrients (String, default: "Not Available")
+  └─ Nutritional information
+
+Indexes: prodId
+Use Cases: Product catalog, search, inventory management
+
+---
+
+### 3. ORDER COLLECTION
+**Collection Name:** order
+**Purpose:** Store purchase orders and transaction records
+
+Fields:
+- orderNo (String, unique, indexed, sparse)
+  └─ Human-readable order number (format: MMYYXXXX)
+- orderId (String, unique, indexed, sparse)
+  └─ Razorpay order ID
+- userId (ObjectId, ref: 'user', required)
+  └─ Reference to the customer who placed the order
+- items (Array of Objects, required)
+  └─ Array of ordered items with structure:
+    - prodId (String, required): Product ID
+    - prodName (String, required): Product name
+    - quantity (Number, required): Quantity ordered
+- totalPrice (Decimal128, required)
+  └─ Total order amount (high precision)
+- orderStatus (String, enum: ["PLACED", "COMPLETED"], default: "PLACED")
+  └─ Current order status
+- transactionId (String, default: null)
+  └─ Razorpay payment transaction ID
+- timestamps: createdAt, updatedAt
+
+Indexes: orderNo, orderId, userId
+Use Cases: Order management, sales tracking, payment processing
+
+---
+
+### 4. CART COLLECTION
+**Collection Name:** cart
+**Purpose:** Store user shopping carts before checkout
+
+Fields:
+- cartId (String, unique, indexed, sparse)
+  └─ Unique cart identifier
+- userId (String, required)
+  └─ User who owns the cart
+- items (Array of Objects, required)
+  └─ Array of cart items with structure:
+    - prodId (String, required): Product ID
+    - quantity (Number, required): Quantity in cart
+- totalPrice (Decimal128, required)
+  └─ Cart total price (high precision)
+- timestamps: createdAt, updatedAt
+
+Indexes: cartId
+Use Cases: Shopping cart management, pre-checkout storage
+
+---
+
+### 5. RATING COLLECTION
+**Collection Name:** rating
+**Purpose:** Store product ratings and reviews from users
+
+Fields:
+- prodId (String, required)
+  └─ Product being rated
+- userId (String, required)
+  └─ User who gave the rating
+- rating (Number, required)
+  └─ Rating value (typically 0-5 scale)
+
+Indexes: None explicitly defined
+Use Cases: Product ratings, review aggregation
+
+---
+
+### 6. REQUEST COLLECTION
+**Collection Name:** request
+**Purpose:** Store seller requests for products/inventory
+
+Fields:
+- requestId (String, unique, indexed, sparse)
+  └─ Unique request identifier
+- prodId (ObjectId, ref: 'product', required)
+  └─ Reference to the product
+- sellerId (ObjectId, ref: 'user', required)
+  └─ Reference to the seller making the request
+- quantity (Number, required)
+  └─ Requested quantity
+- message (String, required)
+  └─ Request message/notes
+- status (String, enum: ['pending', 'accepted', 'rejected'], default: 'pending')
+  └─ Request approval status
+- timestamps: createdAt, updatedAt
+
+Indexes: requestId
+Use Cases: Seller inventory requests, inventory management workflows
+
+---
+
+## DATA RELATIONSHIPS
+
+User → Order (1-to-Many)
+  └─ One user can place multiple orders
+
+User → Rating (1-to-Many)
+  └─ One user can rate multiple products
+
+User → Request (1-to-Many, as Seller)
+  └─ One seller can create multiple requests
+
+Product → Order (1-to-Many)
+  └─ One product can be ordered multiple times
+
+Product → Rating (1-to-Many)
+  └─ One product can have multiple ratings
+
+Product → Request (1-to-Many)
+  └─ One product can be requested multiple times
+
+---
+
+## KEY FEATURES
+
+1. **Authentication:**
+   - Google OAuth integration
+   - Role-based access control (CUSTOMER, SELLER, ADMIN)
+
+2. **E-Commerce:**
+   - Shopping cart management
+   - Order placement with Razorpay payment
+   - Inventory tracking and updates
+   - Product ratings and reviews
+
+3. **Multi-Role Support:**
+   - CUSTOMER: Browse, purchase, rate products
+   - SELLER: Request products/inventory
+   - ADMIN: Manage users and system
+
+4. **Data Precision:**
+   - Decimal128 used for price and rating fields
+   - Ensures accurate financial calculations
+
+5. **Indexing:**
+   - Primary IDs are indexed for fast lookups
+   - Enables efficient searches and queries
+
+---
+
+## TIMESTAMPS
+All collections (except Rating and Product) include:
+- createdAt: Document creation timestamp
+- updatedAt: Last update timestamp
+
+---
+
+## CURRENT LIMITATIONS / NOTES
+
+1. Rating schema does not include timestamps
+2. Request schema has a typo: "reuqired" should be "required" in quantity field
+3. Cart.userId is String but Order.userId is ObjectId (inconsistency)
+4. No soft delete functionality implemented
+5. No audit log collection for tracking changes
+
+---
+
+================================================================================

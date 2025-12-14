@@ -13,6 +13,11 @@ const cartSchema = new Schema(
       type: String,
       required: true,
     },
+    shopId: {
+      type: Schema.Types.ObjectId,
+      ref: "shop",
+      required: true,
+    },
     items: [
       {
         prodId: {

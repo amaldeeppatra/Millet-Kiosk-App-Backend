@@ -22,6 +22,8 @@ const orderSchema = new Schema(
       ref: 'user',
       required: true,
     },
+    shopId: { type: Schema.Types.ObjectId, ref: "shop", required: true },
+    handledBy: { type: Schema.Types.ObjectId, ref: "user" }, // seller fulfilling it
     items: [
       {
         prodId: {

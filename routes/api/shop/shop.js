@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const Shop = require('../../../models/Shop');
+const Shop = require('../../../models/shop');
 const router = express.Router();
 
 router.post('/new', async (req, res) => {
